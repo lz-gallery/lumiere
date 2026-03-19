@@ -2,7 +2,8 @@ import json
 import requests
 import shutil
 import base64
-import os
+import re
+import io
 from pathlib import Path
 from PIL import Image, ImageOps
 
@@ -15,6 +16,7 @@ IMAGE_ROOT = BASE_DIR / "images"
 MENU_FILE = BASE_DIR / "menu.html"
 
 THUMB_MAX_SIZE = (600, 600)
+WEB_MAX_SIZE = (1800, 1800)
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 # Ensure base directories exist
@@ -22,6 +24,16 @@ DATA_DIR.mkdir(exist_ok=True)
 IMAGE_ROOT.mkdir(exist_ok=True)
 INCOMING_DIR.mkdir(exist_ok=True)
 # ----------------------------------------
+
+def sanitize_filename(path):
+    """Renames a file to remove spaces and special characters, returns new path."""
+    clean_name = re.sub(r'[^\w.\-]', '_', path.name)
+    clean_name = re.sub(r'_+', '_', clean_name)
+    new_path = path.parent / clean_name
+    if new_path != path:
+        path.rename(new_path)
+        print(f"  📝 Renamed '{path.name}' → '{clean_name}'")
+    return new_path
 
 def select_from_options(options, prompt):
     """Generates a numbered list in the terminal for selection."""
@@ -37,16 +49,32 @@ def select_from_options(options, prompt):
     except (ValueError, IndexError):
         return None
 
-def upload_to_imgbb(image_path):
+def upload_to_imgbb(image_bytes):
+    """Uploads raw image bytes to imgbb and returns the URL or None."""
     url = "https://api.imgbb.com/1/upload"
     try:
-        with open(image_path, "rb") as file:
-            base64_image = base64.b64encode(file.read())
-            payload = {"key": API_KEY, "image": base64_image}
-            res = requests.post(url, data=payload)
-            return res.json()['data']['url'] if res.status_code == 200 else None
-    except Exception:
+        base64_image = base64.b64encode(image_bytes)
+        payload = {"key": API_KEY, "image": base64_image}
+        res = requests.post(url, data=payload, timeout=60)
+        if res.status_code == 200:
+            return res.json()['data']['url']
+        else:
+            error_msg = res.json().get('error', {}).get('message', res.text)
+            print(f"  ⚠️  imgbb error {res.status_code}: {error_msg}")
+            return None
+    except requests.exceptions.Timeout:
+        print(f"  ⚠️  Upload timed out")
         return None
+    except Exception as e:
+        print(f"  ⚠️  Upload failed: {e}")
+        return None
+
+def strip_source_fields(images_data, ALBUM_JSON):
+    """Removes source_file from all entries and saves the clean JSON."""
+    cleaned = [{k: v for k, v in item.items() if k != "source_file"} for item in images_data]
+    with open(ALBUM_JSON, "w", encoding="utf-8") as f:
+        json.dump(cleaned, f, indent=2)
+    return cleaned
 
 def rebuild_master_files():
     print("\nRefreshing master files...")
@@ -119,6 +147,8 @@ def process_images():
         with open(ALBUM_JSON, "r", encoding="utf-8") as f:
             images_data = json.load(f)
 
+    already_processed = {item.get("source_file", "") for item in images_data}
+
     def get_next_idx(data):
         existing = [int(i['file'].split('_')[1].split('.')[0]) for i in data if 'photo_' in i['file']]
         return max(existing, default=0) + 1
@@ -127,25 +157,84 @@ def process_images():
     if not files:
         return print("No images in /incoming")
 
+    any_remaining = False
+
     for img_path in files:
+        img_path = sanitize_filename(img_path)
+
+        if img_path.name in already_processed:
+            print(f"⏭️  Skipping {img_path.name} (already processed)")
+            continue
+
         idx = get_next_idx(images_data)
         new_name = f"photo_{idx:03d}.jpg"
         print(f"Processing {img_path.name}...")
 
-        with Image.open(img_path) as img:
-            img = ImageOps.exif_transpose(img)
-            w, h = img.size
-            img.thumbnail(THUMB_MAX_SIZE)
-            img.convert("RGB").save(ALBUM_THUMBS / new_name, "JPEG", quality=85)
+        try:
+            with Image.open(img_path) as img:
+                img = ImageOps.exif_transpose(img)
+                w, h = img.size
 
-        url = upload_to_imgbb(img_path)
-        if url:
-            images_data.append({"file": new_name, "full_url": url, "width": w, "height": h})
-            img_path.unlink()
-            print(f"  ✅ {new_name}")
+                # --- Thumbnail (local, saved to disk) ---
+                thumb = img.copy()
+                thumb.thumbnail(THUMB_MAX_SIZE)
+                thumb.convert("RGB").save(ALBUM_THUMBS / new_name, "JPEG", quality=85)
 
-    with open(ALBUM_JSON, "w", encoding="utf-8") as f:
-        json.dump(images_data, f, indent=2)
+                # --- Web version (1800px, uploaded to imgbb for lightbox) ---
+                web = img.copy()
+                web.thumbnail(WEB_MAX_SIZE)
+                web_bytes = io.BytesIO()
+                web.convert("RGB").save(web_bytes, "JPEG", quality=85)
+                web_bytes = web_bytes.getvalue()
+
+                # --- Full original (uploaded to imgbb for download button) ---
+                with open(img_path, "rb") as f:
+                    full_bytes = f.read()
+
+        except Exception as e:
+            print(f"  ❌ Failed to open image {img_path.name}: {e}")
+            continue
+
+        # Upload web version first
+        print(f"  ↑ Uploading web version...")
+        web_url = upload_to_imgbb(web_bytes)
+        if not web_url:
+            print(f"  ❌ Web upload failed for {img_path.name} — skipping.")
+            (ALBUM_THUMBS / new_name).unlink(missing_ok=True)
+            any_remaining = True
+            continue
+
+        # Upload full original
+        print(f"  ↑ Uploading full version...")
+        full_url = upload_to_imgbb(full_bytes)
+        if not full_url:
+            print(f"  ❌ Full upload failed for {img_path.name} — skipping.")
+            (ALBUM_THUMBS / new_name).unlink(missing_ok=True)
+            any_remaining = True
+            continue
+
+        images_data.append({
+            "file": new_name,
+            "source_file": img_path.name,
+            "web_url": web_url,
+            "full_url": full_url,
+            "width": w,
+            "height": h
+        })
+
+        # Save after every successful upload so progress is never lost
+        with open(ALBUM_JSON, "w", encoding="utf-8") as f:
+            json.dump(images_data, f, indent=2)
+
+        img_path.unlink()
+        print(f"  ✅ {new_name}")
+
+    if not any_remaining:
+        images_data = strip_source_fields(images_data, ALBUM_JSON)
+        print(f"\n✅ Done. {len(images_data)} photos in album.")
+    else:
+        print(f"\n⚠️  Some images failed. Fix them and re-run to finish.")
+        print(f"   source_file fields kept in JSON to allow safe restart.")
 
 if __name__ == "__main__":
     print("--- Gallery Manager ---")

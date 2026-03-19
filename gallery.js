@@ -5,12 +5,10 @@ let lightbox;
 //  Set to '' when testing locally (http://127.0.0.1:5500/)
 //  Set to '/lumiere' before pushing to GitHub Pages
 //
-const BASE_PATH = '/lumiere';
+const BASE_PATH = '';
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Helper — builds an absolute path from the repo root so fetch()
-// always resolves correctly regardless of what the current URL looks like.
 function rootPath(path) {
     return `${BASE_PATH}/${path}`.replace('//', '/');
 }
@@ -234,11 +232,18 @@ function loadAlbum(jsonPath, push = true) {
             gallery.innerHTML = '';
             images.forEach(img => {
                 const link = document.createElement('a');
-                link.href = img.full_url;
+
+                // Use web_url for lightbox (1800px, fast loading)
+                // Fall back to full_url for albums that don't have web_url
+                link.href = img.web_url || img.full_url;
+
                 link.dataset.pswpWidth = img.width;
                 link.dataset.pswpHeight = img.height;
                 link.target = "_blank";
                 link.rel = "noopener noreferrer";
+
+                // Store full_url for the download button
+                link.dataset.fullUrl = img.full_url;
 
                 const image = document.createElement('img');
                 image.src = rootPath(`images/${year}/${slug}/thumbs/${img.file}`);
@@ -273,7 +278,9 @@ function loadAlbum(jsonPath, push = true) {
                             el.setAttribute('rel', 'noopener');
 
                             pswp.on('change', () => {
-                                el.href = pswp.currSlide.data.element.href;
+                                // Always download the full resolution original
+                                const currentEl = pswp.currSlide.data.element;
+                                el.href = currentEl.dataset.fullUrl || currentEl.href;
                             });
                         }
                     });
