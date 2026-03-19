@@ -1,0 +1,202 @@
+/* ─── BASE ───────────────────────────────────────────────────────────────── */
+
+body {
+    margin: 0;
+    padding: 40px;
+    background: #161616;
+    color: #eee;
+    font-family: system-ui, sans-serif;
+}
+
+/* ─── NAVIGATION ─────────────────────────────────────────────────────────── */
+
+#album-menu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 25px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+    text-transform: uppercase;
+}
+
+nav a,
+.menu-year {
+    color: #aaa;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    font-weight: normal;
+    text-transform: uppercase;
+    display: inline-block;
+    order: 1;
+}
+
+nav a:hover,
+.menu-year:hover {
+    color: #fff;
+}
+
+.menu-albums {
+    flex-basis: 100%;
+    order: 2;
+    display: none;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
+.menu-albums a {
+    font-weight: normal;
+    font-size: 1em;
+    margin-right: 20px;
+    color: #888;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.menu-albums a:hover {
+    color: #fff;
+}
+
+/* ─── VIEW TITLE ─────────────────────────────────────────────────────────── */
+
+.view-title {
+    width: 100%;
+    grid-column: 1 / -1;
+    margin: 0 0 20px 0;
+    font-size: 1.2em;
+    font-weight: normal;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ─── ALBUM TITLE ────────────────────────────────────────────────────────── */
+
+#album-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.2em;
+    font-weight: normal;
+    margin-bottom: 30px;
+    opacity: 0.8;
+}
+
+/* ─── BACK ARROW ─────────────────────────────────────────────────────────── */
+
+.back-arrow {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 1.35em;
+    font-weight: 900;
+    display: inline-block;
+    transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.back-arrow:hover {
+    transform: translateX(-5px);
+    color: #fff;
+    opacity: 1;
+}
+
+/* ─── HOME / YEAR GRID ───────────────────────────────────────────────────── */
+
+.album-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.album-card {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 3 / 2;
+    cursor: pointer;
+    background: #222;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.album-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.album-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+.album-card:hover img {
+    opacity: 1;
+}
+
+.album-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 40px 20px 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+
+.album-info h2 {
+    margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.album-info span {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+/* ─── PHOTO GRID ─────────────────────────────────────────────────────────── */
+
+#gallery {
+    column-count: 3;
+    column-gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#gallery a {
+    display: inline-block;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+#gallery img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+#gallery img:hover {
+    transform: scale(1.02);
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    #gallery { column-count: 2; }
+}
+
+@media (max-width: 600px) {
+    body { padding: 20px; }
+    #gallery { column-count: 2; column-gap: 8px; }
+    #gallery a { margin-bottom: 8px; }
+    .album-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
