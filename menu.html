@@ -1,4 +1,13 @@
 <a onclick="showHome()">HOME</a>
+<div class="menu-year" onclick="toggleYear('year-2026')">2026 ▼</div>
+<div id="year-2026" class="menu-albums" style="display:none;">
+  <a onclick="loadAlbum('data/2026/paris_26.json')">PARIS 26</a>
+</div>
+<div class="menu-year" onclick="toggleYear('year-2025')">2025 ▼</div>
+<div id="year-2025" class="menu-albums" style="display:none;">
+  <a onclick="loadAlbum('data/2025/neuchatel_25.json')">NEUCHATEL 25</a>
+  <a onclick="loadAlbum('data/2025/strasbourg_25.json')">STRASBOURG 25</a>
+</div>
 <div class="menu-year" onclick="toggleYear('year-2024')">2024 ▼</div>
 <div id="year-2024" class="menu-albums" style="display:none;">
   <a onclick="loadAlbum('data/2024/portugal_24.json')">PORTUGAL 24</a>

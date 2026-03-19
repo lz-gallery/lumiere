@@ -4,5 +4,21 @@
       "title": "PORTUGAL 24",
       "file": "data/2024/portugal_24.json"
     }
+  ],
+  "2025": [
+    {
+      "title": "NEUCHATEL 25",
+      "file": "data/2025/neuchatel_25.json"
+    },
+    {
+      "title": "STRASBOURG 25",
+      "file": "data/2025/strasbourg_25.json"
+    }
+  ],
+  "2026": [
+    {
+      "title": "PARIS 26",
+      "file": "data/2026/paris_26.json"
+    }
   ]
 }
