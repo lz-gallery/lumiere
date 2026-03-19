@@ -5,7 +5,7 @@ let lightbox;
 //  Set to '' when testing locally (http://127.0.0.1:5500/)
 //  Set to '/lumiere' before pushing to GitHub Pages
 //
-const BASE_PATH = '';
+const BASE_PATH = '/lumiere';
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
