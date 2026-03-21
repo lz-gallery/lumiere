@@ -8,7 +8,9 @@
   "2025": [
     {
       "title": "NEUCHATEL 25",
-      "file": "data/2025/neuchatel_25.json"
+      "file": "data/2025/neuchatel_25.json",
+      "year_cover_album": "strasbourg_25",
+      "year_cover_photo": 1
     },
     {
       "title": "STRASBOURG 25",
