@@ -23,6 +23,10 @@
     {
       "title": "PARIS 26",
       "file": "data/2026/paris_26.json"
+    },
+    {
+      "title": "SPAIN 26",
+      "file": "data/2026/spain_26.json"
     }
   ]
 }
